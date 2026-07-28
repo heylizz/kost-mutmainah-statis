@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validasi Pembayaran - Kost Mutmainah</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="dash-nav">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="penghuni.html">Penghuni</a>
+        <a href="pembayaran.html" class="active">Pembayaran</a>
+        <a href="booking.html">Pemesanan</a>
+        <a href="../logout.html">Logout</a>
+    </nav>
+</div>
+
+<div class="dashboard-section">
+    <h1>Validasi Pembayaran</h1>
+    <p class="sub">Periksa dan validasi pembayaran penghuni kost.</p>
+
+    <div class="table-box">
+        <h3>Pembayaran Pending</h3>
+        <table>
+            <thead>
+                <tr><th>Nama</th><th>Kamar</th><th>Bukti Transfer</th><th>Status</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="tbodyPembayaran"></tbody>
+        </table>
+    </div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="../js/app.js"></script>
+<script>
+requirePemilik();
+
+function renderPending(){
+    const s = getState();
+    const list = s.pembayaran.filter(p => p.status_pembayaran === 'Pending').sort((a,b)=>b.id_pembayaran-a.id_pembayaran);
+
+    document.getElementById('tbodyPembayaran').innerHTML = list.length ? list.map(p => {
+        const pgh = s.penghuni.find(x => x.id_penghuni === p.id_penghuni);
+        return `
+        <tr>
+            <td>${pgh ? pgh.nama : '-'}</td>
+            <td>${pgh ? pgh.nomor_kamar : '-'}</td>
+            <td><button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="alert('Simulasi: menampilkan file ${p.bukti_transfer}')">Bukti</button></td>
+            <td><span class="badge-yellow" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${p.status_pembayaran}</span></td>
+            <td class="actions-cell">
+                <button class="btn btn-success btn-sm" onclick="handleValidasi(${p.id_pembayaran}, 'approve')">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="handleValidasi(${p.id_pembayaran}, 'reject')">Reject</button>
+            </td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="5" style="text-align:center;color:#aaa;">Tidak ada pembayaran pending</td></tr>`;
+}
+
+function handleValidasi(id_pembayaran, aksi){
+    actionValidasiPembayaran(id_pembayaran, aksi);
+    renderPending();
+}
+
+renderPending();
+</script>
+</body>
+</html>

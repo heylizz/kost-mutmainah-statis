@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kost Mutmainah</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="index.html" class="active">Home</a>
+        <a href="kamar.html">Kamar</a>
+        <a href="kontak.html">Kontak</a>
+        <span id="navAuthLinks"></span>
+    </nav>
+</div>
+
+<div class="hero">
+    <div class="hero-text">
+        <h4>Selamat Datang di</h4>
+        <h1 id="namaKost">Kost Mutmainah</h1>
+        <p id="deskripsiKost">Kost nyaman dengan fasilitas lengkap, lingkungan bersih, dan lokasi strategis untuk mahasiswa maupun pekerja.</p>
+        <div class="hero-btns">
+            <a href="kamar.html" class="btn btn-primaryutama">Pesan Sekarang</a>
+            <a href="kontak.html" class="btn btn-outline">Hubungi Pemilik</a>
+        </div>
+    </div>
+<div class="hero-img">
+    <img src="kost.jpeg" alt="kost">
+</div>
+</div>
+<!-- INFO CARDS -->
+<div class="info-section">
+    <h2>Informasi Kost</h2>
+    <div class="cards">
+        <div class="card">
+            <div class="icon"><img src="icon/Fasilitas.png" alt="Fasilitas"></div>
+            <h3>Fasilitas</h3>
+            <p>Kasur, lemari, WiFi, kamar mandi dalam, dan area parkir.</p>
+        </div>
+        <div class="card">
+            <div class="icon"><img src="icon/Harga.png" alt="Harga"></div>
+            <h3>Harga</h3>
+            <p id="hargaMulai">Mulai dari Rp700.000 per bulan dengan fasilitas lengkap.</p>
+        </div>
+        <div class="card">
+            <div class="icon"><img src="icon/Ketersediaan.png" alt="Ketersediaan"></div>
+            <h3>Ketersediaan</h3>
+            <p>Tersedia <span id="kamarKosong">0</span> kamar kosong yang siap ditempati.</p>
+        </div>
+    </div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<!-- MODAL LOGIN -->
+<div class="modal-overlay" id="loginModal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h2>Login</h2>
+        <p class="sub">Masukkan username dan password Anda</p>
+        <div id="loginErrorBox"></div>
+        <form id="formLogin">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="loginUsername" placeholder="Masukkan username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" placeholder="Masukkan password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%">Login</button>
+        </form>
+        <p class="sub" style="margin-top:16px;">
+            Belum punya akun? <a href="#" id="linkDaftar">Daftar di sini</a>
+        </p>
+        <p class="sub" style="margin-top:6px;font-size:11.5px;color:#aaa;">
+            Demo akun pemilik: <b>admin</b> / <b>123456</b>
+        </p>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+// Isi konten dinamis dari state (pengganti query PHP ke tabel informasi_kost & kamar)
+(function initHome(){
+    const s = getState();
+    document.getElementById('namaKost').textContent = s.informasi_kost.nama_kost;
+    document.getElementById('deskripsiKost').textContent = s.informasi_kost.deskripsi;
+    document.getElementById('hargaMulai').textContent = 'Mulai dari ' + formatRupiah(s.kamar.harga_sewa) + ' per bulan dengan fasilitas lengkap.';
+  document.getElementById('kamarKosong').textContent = s.kamar.jumlah_tersedia;
+
+    const redirectUrl = qs('redirect_url') || '';
+    document.getElementById('linkDaftar').href = 'register.html?redirect_url=' + encodeURIComponent(redirectUrl);
+
+    // navbar auth links (pengganti isLoggedIn()/isPemilik() di navbar PHP)
+    const nav = document.getElementById('navAuthLinks');
+    if (s.session.loggedIn) {
+        const dashUrl = s.session.role === 'pemilik' ? 'pemilik/dashboard.html' : 'penghuni/dashboard.html';
+        nav.innerHTML = `<a href="${dashUrl}">Dashboard</a> <a href="#" onclick="doLogout();return false;">Logout</a>`;
+    } else {
+        nav.innerHTML = `<a href="#" class="btn-login" onclick="openModal();return false;">Login</a>`;
+    }
+
+    // buka modal otomatis kalau ?login=1 (sama seperti PHP: $login_error || isset($_GET['login']))
+    if (qs('login') === '1') openModal();
+})();
+
+function openModal(){ document.getElementById('loginModal').classList.add('active'); }
+function closeModal(){ document.getElementById('loginModal').classList.remove('active'); }
+document.getElementById('loginModal').addEventListener('click', function(e){
+    if (e.target === this) closeModal();
+});
+
+document.getElementById('formLogin').addEventListener('submit', function(e){
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const result = actionLogin(username, password);
+
+    if (result.error) {
+        document.getElementById('loginErrorBox').innerHTML = `<div class="error-msg">${result.error}</div>`;
+        openModal();
+        return;
+    }
+
+    const redirectTarget = qs('redirect_url');
+    if (redirectTarget) {
+        location.href = redirectTarget;
+    } else if (result.role === 'pemilik') {
+        location.href = 'pemilik/dashboard.html';
+    } else {
+        location.href = 'penghuni/dashboard.html';
+    }
+});
+</script>
+</body>
+</html>

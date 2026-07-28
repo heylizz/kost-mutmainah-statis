@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Identitas - Kost Mutmainah</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="navbar">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="kamar.html">Kamar</a>
+        <a href="kontak.html">Kontak</a>
+        <a href="#" onclick="doLogout();return false;">Logout</a>
+    </nav>
+</div>
+
+<div class="booking-section">
+    <h1>Upload Identitas</h1>
+    <p class="sub">Pemesanan Anda sudah disetujui sementara. Silakan upload identitas (KTP) untuk melanjutkan proses konfirmasi akhir.</p>
+    <div class="form-box" id="formBoxUpload"></div>
+</div>
+
+<footer>&copy; 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="js/app.js"></script>
+<script>
+requireLogin();
+
+let currentBooking = null;
+
+function renderUploadPage(error, success){
+    const box = document.getElementById('formBoxUpload');
+    currentBooking = getMyLatestBooking();
+
+    if (success) {
+        box.innerHTML = `
+            <div class="success-box">
+                <h2>Identitas Berhasil Dikirim!</h2>
+                <p>Pemilik kost akan meninjau data Anda untuk konfirmasi akhir.</p>
+                <a href="index.html" class="btn btn-primary">Kembali ke Beranda</a>
+            </div>`;
+        return;
+    }
+
+    if (!currentBooking || currentBooking.status_booking !== 'Menunggu Identitas') {
+        box.innerHTML = `
+            <div class="error-msg">Tidak ada pemesanan yang menunggu upload identitas saat ini.</div>
+            <a href="index.html" class="btn btn-primary" style="margin-top:16px;display:inline-block;">Kembali ke Beranda</a>`;
+        return;
+    }
+
+    box.innerHTML = `
+        ${error ? `<div class="error-msg">${error}</div>` : ''}
+        <form id="formUpload">
+            <div class="form-group">
+                <label>File Identitas (KTP)</label>
+                <input type="file" id="fileIdentitas" accept=".jpg,.jpeg,.png,.pdf" required>
+                <small>Format: JPG, PNG, atau PDF. Maksimal 2MB. (Simulasi: file tidak benar-benar diunggah, hanya nama file yang dicatat)</small>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">Upload Identitas</button>
+        </form>`;
+
+    document.getElementById('formUpload').addEventListener('submit', function(e){
+        e.preventDefault();
+        const f = document.getElementById('fileIdentitas').files[0];
+        if (!f) return renderUploadPage('Silakan pilih file identitas (KTP) terlebih dahulu.', false);
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (!['jpg','jpeg','png','pdf'].includes(ext)) return renderUploadPage('Format file harus JPG, PNG, atau PDF.', false);
+        if (f.size > 2 * 1024 * 1024) return renderUploadPage('Ukuran file maksimal 2MB.', false);
+
+        const nama_file = 'identitas_' + currentBooking.id_booking + '_' + Date.now() + '.' + ext;
+        const result = actionUploadIdentitas(currentBooking.id_booking, nama_file);
+        if (result.error) return renderUploadPage(result.error, false);
+        renderUploadPage(null, true);
+    });
+}
+
+renderUploadPage(null, false);
+</script>
+</body>
+</html>

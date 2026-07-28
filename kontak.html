@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontak - Kost Mutmainah</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="navbar">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="kamar.html">Kamar</a>
+        <a href="kontak.html" class="active">Kontak</a>
+        <span id="navAuthLinks"></span>
+    </nav>
+</div>
+<div class="kontak-section">
+    <h1>Kontak &amp; Bantuan</h1>
+    <p class="sub">Hubungi pemilik kost untuk informasi lebih lanjut, pertanyaan, maupun bantuan terkait pemesanan kamar.</p>
+    <div class="kontak-box">
+        <div class="kontak-left">
+            <img src="icon/hubungi.png" alt="Hubungi" style="width:48px;height:48px;">
+            <h3>Hubungi Pemilik</h3>
+            <p>Silakan hubungi pemilik melalui WhatsApp untuk konsultasi, pemesanan, atau bantuan lainnya.</p>
+            <div class="info-item">
+                <img src="icon/telepon.png" alt="Telepon" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;">
+                <span id="nomorKontak">-</span>
+            </div>
+            <div class="info-item">
+                <img src="icon/lokasi.png" alt="Lokasi" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;">
+                <span id="alamatKost">-</span>
+            </div>
+        </div>
+        <div class="kontak-right">
+            <img src="icon/whatsapp.png" alt="WhatsApp" style="width:48px;height:48px;">
+            <h3>WhatsApp Pemilik</h3>
+            <p>Klik tombol di bawah untuk langsung terhubung dengan pemilik kost.</p>
+            <a id="btnWhatsapp" href="#" target="_blank" class="btn btn-success">Chat WhatsApp</a>
+        </div>
+    </div>
+</div>
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="js/app.js"></script>
+<script>
+(function initKontak(){
+    const s = getState();
+    const nav = document.getElementById('navAuthLinks');
+    if (s.session.loggedIn) {
+        const dashUrl = s.session.role === 'pemilik' ? 'pemilik/dashboard.html' : 'penghuni/dashboard.html';
+        nav.innerHTML = `<a href="${dashUrl}">Dashboard</a> <a href="#" onclick="doLogout();return false;">Logout</a>`;
+    } else {
+        nav.innerHTML = `<a href="index.html?login=1" class="btn-login">Login</a>`;
+    }
+
+    const nomorKontak = s.informasi_kost.nomor_kontak || '0812-3456-7890';
+    const alamat = s.informasi_kost.alamat || '-';
+
+    document.getElementById('nomorKontak').textContent = nomorKontak;
+    document.getElementById('alamatKost').textContent = alamat;
+
+    let wa = nomorKontak.replace(/[^0-9]/g, '');
+    if (wa.charAt(0) === '0') wa = '62' + wa.substring(1);
+
+    document.getElementById('btnWhatsapp').href = `https://wa.me/${wa}`;
+})();
+</script>
+</body>
+</html>

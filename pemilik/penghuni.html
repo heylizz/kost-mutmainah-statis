@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Penghuni - Kost Mutmainah</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="dash-nav">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="penghuni.html" class="active">Penghuni</a>
+        <a href="pembayaran.html">Pembayaran</a>
+        <a href="booking.html">Pemesanan</a>
+        <a href="../logout.html">Logout</a>
+    </nav>
+</div>
+
+<div class="dashboard-section">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h1>Data Penghuni</h1>
+            <p class="sub">Informasi data penghuni Kost Mutmainah.</p>
+        </div>
+        <input type="text" id="searchInput" class="search-input" placeholder="Cari penghuni...">
+    </div>
+    <div id="waBannerBox"></div>
+
+    <div class="table-box">
+        <h3>List Penghuni</h3>
+        <table>
+            <thead>
+                <tr><th>Nama</th><th>Nomor HP</th><th>Identitas</th><th>Kamar</th><th>Status Pembayaran</th><th>Aksi</th></tr>
+            </thead>
+            <tbody id="tbodyPenghuni"></tbody>
+        </table>
+    </div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="../js/app.js"></script>
+<script>
+requirePemilik();
+renderWaBanner();
+
+function renderWaBanner(){
+    const s = getState();
+    const box = document.getElementById('waBannerBox');
+    box.innerHTML = s.lastWaMessage
+        ? `<div class="wa-banner"><button class="close-wa" onclick="clearWaBanner()">✕</button><b>Simulasi Notifikasi WhatsApp</b>${s.lastWaMessage}</div>`
+        : '';
+}
+function clearWaBanner(){
+    const s = getState(); s.lastWaMessage = null; saveState(s);
+    document.getElementById('waBannerBox').innerHTML = '';
+}
+
+function statusBayarTerakhir(id_penghuni){
+    const s = getState();
+    const list = s.pembayaran.filter(p => p.id_penghuni === id_penghuni).sort((a,b)=>b.id_pembayaran-a.id_pembayaran);
+    return list.length ? list[0].status_pembayaran : null;
+}
+
+function renderList(search){
+    const s = getState();
+    search = (search || '').toLowerCase();
+    const list = s.penghuni.filter(p => p.nama.toLowerCase().includes(search)).sort((a,b)=>b.id_penghuni-a.id_penghuni);
+
+    document.getElementById('tbodyPenghuni').innerHTML = list.length ? list.map(p => {
+        const statusBayar = statusBayarTerakhir(p.id_penghuni);
+        return `
+        <tr>
+            <td>${p.nama}</td>
+            <td>${p.nomor_hp}</td>
+            <td>${p.identitas ? `<button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="alert('Simulasi: menampilkan file ${p.identitas}')">${p.identitas}</button>` : '-'}</td>
+            <td>${p.nomor_kamar}</td>
+            <td><span class="${statusBayar === 'Lunas' ? 'badge-green' : 'badge-yellow'}" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${statusBayar || 'Belum Bayar'}</span></td>
+            <td>
+                ${statusBayar !== 'Lunas' ? `<button class="btn btn-success btn-sm" onclick="handleReminder('${p.nama.replace(/'/g,"")}')">Kirim Reminder WA</button>` : ''}
+            </td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="6" style="text-align:center;color:#aaa;">Tidak ada data penghuni</td></tr>`;
+}
+
+function handleReminder(nama){
+    actionKirimReminder(nama);
+    location.reload();
+}
+
+document.getElementById('searchInput').addEventListener('input', function(){ renderList(this.value); });
+renderList('');
+</script>
+</body>
+</html>

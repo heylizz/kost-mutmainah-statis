@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pembayaran - Kost Mutmainah</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .page { min-height: calc(100vh - 52px); padding: 40px 16px; background: #f3f4f6; }
+    .container { max-width: 480px; margin: 0 auto; }
+    .tagihan-card { background: #E8F9F3; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .tagihan-label { font-size: 12px; color: #0B7A54; margin-bottom: 4px; }
+    .tagihan-amount { font-size: 24px; font-weight: 700; color: #0B7A54; }
+    .tagihan-due { font-size: 12px; color: #0B7A54; margin-top: 2px; }
+    .section-label { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+    .transfer-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
+    .transfer-bank { font-size: 14px; font-weight: 600; color: #111; }
+    .transfer-name { font-size: 13px; color: #6b7280; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="dash-nav">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="pembayaran.html" class="active">Pembayaran</a>
+        <a href="../logout.html">Logout</a>
+    </nav>
+</div>
+
+<div class="page">
+  <div class="container">
+    <h1 style="font-size:22px;font-weight:600;text-align:center;margin-bottom:6px;">Pembayaran Kost</h1>
+    <p class="sub" style="text-align:center;color:#6b7280;margin-bottom:28px;">Upload bukti pembayaran untuk melakukan konfirmasi pembayaran kost.</p>
+    <div class="card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;" id="cardPembayaran"></div>
+  </div>
+</div>
+<br>
+<br>
+<br>
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="../js/app.js"></script>
+<script>
+requirePenghuni();
+const penghuni = getMyPenghuni();
+
+function renderPembayaranPage(error, success){
+    const card = document.getElementById('cardPembayaran');
+    if (!penghuni) {
+        card.innerHTML = `<div class="error-msg">Kamu belum terdaftar sebagai penghuni resmi.</div>`;
+        return;
+    }
+    if (success) {
+        card.innerHTML = `
+            <div style="text-align:center;">
+                <h2 style="color:#0B7A54;margin-bottom:8px;">Pembayaran Terkirim!</h2>
+                <p style="color:#6b7280;">Menunggu verifikasi dari pemilik kost.</p>
+            </div>`;
+        return;
+    }
+    card.innerHTML = `
+        <div class="tagihan-card">
+            <div class="tagihan-label">Total Tagihan</div>
+            <div class="tagihan-amount">Rp700.000</div>
+            <div class="tagihan-due">Jatuh tempo: tanggal 10 tiap bulan</div>
+        </div>
+        <div class="section-label">Transfer Ke</div>
+        <div class="transfer-box">
+            <div class="transfer-bank">BCA – 1234567890</div>
+            <div class="transfer-name">a.n Kost Mutmainah</div>
+        </div>
+        ${error ? `<div class="error-msg">${error}</div>` : ''}
+        <form id="formBayar">
+            <div class="section-label">Upload Bukti Pembayaran</div>
+            <div class="upload-area" onclick="document.getElementById('fileBukti').click()">
+                <div class="upload-icon">
+            <img src="../icon/upload.png" alt="upload">
+          </div>
+                <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">Upload bukti transfer pembayaran</div>
+                <button class="btn-outline" type="button" style="border:1px solid #d1d5db;background:transparent;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:500;color:#1CAF82;cursor:pointer;">Pilih File</button>
+                <input type="file" id="fileBukti" style="display:none" accept=".jpg,.jpeg,.png" onchange="showFileName(this)">
+                <div class="filename-tag" id="fname" style="display:none;"></div>
+            </div>
+            <button class="btn btn-primary" type="submit" style="width:100%;margin-top:16px;padding:14px;">Konfirmasi Pembayaran</button>
+        </form>`;
+
+    document.getElementById('formBayar').addEventListener('submit', function(e){
+        e.preventDefault();
+        const f = document.getElementById('fileBukti').files[0];
+        if (!f) return renderPembayaranPage('Silakan upload bukti transfer terlebih dahulu.', false);
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (!['jpg','jpeg','png'].includes(ext)) return renderPembayaranPage('Format file harus JPG atau PNG.', false);
+        if (f.size > 2 * 1024 * 1024) return renderPembayaranPage('Ukuran file maksimal 2MB.', false);
+        const nama_file = 'bukti_' + penghuni.id_penghuni + '_' + Date.now() + '.' + ext;
+        const result = actionSubmitPembayaran(penghuni.id_penghuni, nama_file);
+        if (result.error) return renderPembayaranPage(result.error, false);
+        renderPembayaranPage(null, true);
+    });
+}
+function showFileName(input){
+    const f = input.files[0];
+    const tag = document.getElementById('fname');
+    if (f) { tag.style.display = 'inline-block'; tag.textContent = '📎 ' + f.name; }
+}
+
+renderPembayaranPage(null, false);
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pemilik - Kost Mutmainah</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="dash-nav">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="penghuni.html">Penghuni</a>
+        <a href="pembayaran.html">Pembayaran</a>
+        <a href="booking.html">Pemesanan</a>
+        <a href="../logout.html">Logout</a>
+    </nav>
+</div>
+
+<div class="dashboard-section">
+    <h1>Dashboard Pemilik</h1>
+    <p class="sub">Ringkasan informasi dan pengelolaan Kost Mutmainah.</p>
+    <div id="dashTop"></div>
+    <div class="table-box">
+        <h3>Penghuni Terbaru</h3>
+        <table>
+            <thead><tr><th>Nama</th><th>Kamar</th><th>Status</th></tr></thead>
+            <tbody id="tbodyPenghuniTerbaru"></tbody>
+        </table>
+    </div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="../js/app.js"></script>
+<script>
+requirePemilik();
+
+const s = getState();
+const totalKamar = 11;
+const kamarKosong = totalKamar - s.penghuni.filter(p => p.status_penghuni === 'Aktif').length;
+const bulanIni = thisMonthStr();
+const bayarBulanIni = s.pembayaran.filter(p => p.periode_bulan === bulanIni);
+const jumlahLunas = bayarBulanIni.filter(p => p.status_pembayaran === 'Lunas').length;
+const jumlahPending = bayarBulanIni.filter(p => p.status_pembayaran === 'Pending').length;
+const jumlahBelum = totalKamar - jumlahLunas - jumlahPending;
+const pemasukan = bayarBulanIni.filter(p => p.status_pembayaran === 'Lunas').reduce((sum,p) => sum + p.jumlah_bayar, 0);
+
+document.getElementById('dashTop').innerHTML = `
+    <div class="dash-top">
+        <div class="rekap-box">
+            <h3>Rekap Pembayaran</h3>
+            <div class="rekap-highlight">
+                <div class="rekap-highlight-label">Pemasukan Bulan Ini</div>
+                <div class="rekap-highlight-value">${formatRupiah(pemasukan)}</div>
+            </div>
+            <div class="rekap-mini-grid">
+                <div class="mini-stat mini-green"><div class="mini-value">${jumlahLunas}</div><div class="mini-label">Lunas</div></div>
+                <div class="mini-stat mini-yellow"><div class="mini-value">${jumlahPending}</div><div class="mini-label">Pending</div></div>
+                <div class="mini-stat mini-red"><div class="mini-value">${Math.max(jumlahBelum,0)}</div><div class="mini-label">Belum</div></div>
+            </div>
+        </div>
+                <div class="stat-cards-vertical">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="../icon/kamar kosong.png"></div>
+                <div class="stat-label">Kamar Kosong</div>
+                <div class="stat-value">${kamarKosong}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><img src="../icon/total kamar.png"></div>
+                <div class="stat-label">Total Kamar</div>
+                <div class="stat-value">${totalKamar}</div>
+            </div>
+
+        </div>
+    </div>`;
+
+const terbaru = [...s.penghuni].sort((a,b) => b.id_penghuni - a.id_penghuni).slice(0,5);
+document.getElementById('tbodyPenghuniTerbaru').innerHTML = terbaru.length
+    ? terbaru.map(p => `
+        <tr>
+            <td>${p.nama}</td>
+            <td>${p.nomor_kamar}</td>
+            <td><span class="badge-green" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${p.status_penghuni}</span></td>
+        </tr>`).join('')
+    : `<tr><td colspan="3" style="text-align:center;color:#aaa;">Belum ada data penghuni</td></tr>`;
+</script>
+</body>
+</html>

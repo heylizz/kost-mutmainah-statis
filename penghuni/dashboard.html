@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Penghuni - Kost Mutmainah</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<div class="dash-nav">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <span id="navPembayaranLink"></span>
+        <a href="../logout.html">Logout</a>
+    </nav>
+</div>
+
+<div class="dashboard-section">
+    <h1>Dashboard Penghuni</h1>
+    <p class="sub">Informasi status sewa dan pembayaran penghuni kost.</p>
+    <div id="waBannerBox"></div>
+    <div id="dashboardBody"></div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="../js/app.js"></script>
+<script>
+requirePenghuni();
+
+
+const penghuni = getMyPenghuni();
+document.getElementById('navPembayaranLink').innerHTML = penghuni ? `<a href="pembayaran.html">Pembayaran</a>` : '';
+
+const booking = !penghuni ? getMyLatestBooking() : null;
+const body = document.getElementById('dashboardBody');
+
+if (!penghuni && !booking) {
+    body.innerHTML = `
+        <div class="table-box">
+            <p style="text-align:center;color:#aaa;padding:24px 0;">Kamu belum memiliki pemesanan kamar.</p>
+            <div style="text-align:center;"><a href="../kamar.html" class="btn btn-primary">Lihat Kamar</a></div>
+        </div>`;
+
+} else if (!penghuni && booking) {
+    let inner = '';
+    if (booking.status_booking === 'Menunggu Persetujuan') {
+        inner = `<p>Pemesanan kamu sedang ditinjau oleh pemilik kost. Mohon tunggu konfirmasi.</p>`;
+
+    } else if (booking.status_booking === 'Menunggu Identitas') {
+        inner = `
+            <p>Pemesanan kamu sudah disetujui sementara${booking.nomor_kamar ? ' di Kamar No. ' + booking.nomor_kamar : ''}. Silakan upload identitas (KTP) untuk melanjutkan.</p>
+            <div id="uploadErrorBox"></div>
+            <form id="formUploadDash" enctype="multipart/form-data" style="margin-top:16px;">
+                <div class="form-group">
+                    <label>File Identitas (KTP)</label>
+                    <input type="file" id="fileIdentitasDash" accept=".jpg,.jpeg,.png,.pdf" required>
+                    <small>Format: JPG, PNG, atau PDF. Maksimal 2MB. (Simulasi: hanya nama file yang dicatat)</small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">Upload Identitas</button>
+            </form>`;
+
+    } else if (booking.status_booking === 'Menunggu Konfirmasi') {
+        inner = `<p>Identitas kamu sudah diterima (file: <b>${booking.identitas}</b>). Pemilik kost sedang melakukan konfirmasi akhir.</p>
+                 <p style="margin-top:10px;font-size:12px;color:#999;">Simulasi: login sebagai pemilik untuk memproses konfirmasi akhir.</p>`;
+
+    } else if (booking.status_booking === 'Ditolak') {
+        inner = `<p>Mohon maaf, pemesanan kamu ditolak oleh pemilik kost.</p>
+                 <a href="../kamar.html" class="btn btn-primary" style="margin-top:12px;display:inline-block;">Cari Kamar Lain</a>`;
+    }
+    body.innerHTML = `<div class="table-box"><h3>Status Pemesanan</h3>${inner}</div>`;
+
+    const formUpload = document.getElementById('formUploadDash');
+    if (formUpload) {
+        formUpload.addEventListener('submit', function(e){
+            e.preventDefault();
+            const f = document.getElementById('fileIdentitasDash').files[0];
+            if (!f) { document.getElementById('uploadErrorBox').innerHTML = `<div class="error-msg">Silakan pilih file identitas terlebih dahulu.</div>`; return; }
+            const ext = f.name.split('.').pop().toLowerCase();
+            if (!['jpg','jpeg','png','pdf'].includes(ext)) { document.getElementById('uploadErrorBox').innerHTML = `<div class="error-msg">Format file harus JPG, PNG, atau PDF.</div>`; return; }
+            if (f.size > 2 * 1024 * 1024) { document.getElementById('uploadErrorBox').innerHTML = `<div class="error-msg">Ukuran file maksimal 2MB.</div>`; return; }
+            const nama_file = 'identitas_' + booking.id_booking + '_' + Date.now() + '.' + ext;
+            actionUploadIdentitas(booking.id_booking, nama_file);
+            location.reload();
+        });
+    }
+
+} else if (penghuni) {
+    const s = getState();
+    const histori = s.pembayaran.filter(p => p.id_penghuni === penghuni.id_penghuni)
+                                 .sort((a,b) => b.id_pembayaran - a.id_pembayaran).slice(0,5);
+    const bulanIni = thisMonthStr();
+    const bayarBulan = s.pembayaran.find(p => p.id_penghuni === penghuni.id_penghuni && p.periode_bulan === bulanIni);
+
+    const jatuhTempo = new Date(); jatuhTempo.setDate(10);
+    const diffHari = Math.round((jatuhTempo - new Date()) / 86400000);
+
+    body.innerHTML = `
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon"><img src="../icon/status sewa.png" alt="upload"></div>
+                <div class="stat-label">Status Sewa</div>
+                <div class="stat-value">Aktif</div>
+                <span class="badge-green" style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-top:8px;">Sedang Menempati</span>
+            </div>
+            <div class="stat-card">
+                                <div class="stat-icon"><img src="../icon/pembayaran.png" alt="upload"></div>
+                <div class="stat-label">Status Pembayaran</div>
+                <div class="stat-value">${bayarBulan ? bayarBulan.status_pembayaran : 'Belum Bayar'}</div>
+            </div>
+            <div class="stat-card">
+                                <div class="stat-icon"><img src="../icon/reminder.png" alt="upload"></div>
+                <div class="stat-label">Reminder Pembayaran</div>
+                <div class="stat-value">${Math.abs(diffHari)} Hari ${diffHari < 0 ? 'Lalu' : 'Lagi'}</div>
+                <span class="badge-yellow" style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-top:8px;">Jatuh Tempo</span>
+            </div>
+        </div>
+        <div class="table-box">
+            <h3>Histori Pembayaran</h3>
+            <table>
+                <thead><tr><th>Bulan</th><th>Tanggal</th><th>Status</th></tr></thead>
+                <tbody>
+                ${histori.length ? histori.map(h => `
+                    <tr>
+                        <td>${h.periode_bulan}</td>
+                        <td>${formatTanggalIndo(h.tanggal_bayar)}</td>
+                        <td><span class="${h.status_pembayaran === 'Lunas' ? 'badge-green' : 'badge-yellow'}" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${h.status_pembayaran}</span></td>
+                    </tr>`).join('') : `<tr><td colspan="3" style="text-align:center;color:#aaa;">Belum ada histori pembayaran</td></tr>`}
+                </tbody>
+            </table>
+        </div>`;
+}
+</script>
+</body>
+</html>

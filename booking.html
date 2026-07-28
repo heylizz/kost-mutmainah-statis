@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemesanan Kamar - Kost Mutmainah</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="navbar">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="kamar.html">Kamar</a>
+        <a href="kontak.html">Kontak</a>
+        <span id="navAuthLinks"></span>
+    </nav>
+</div>
+<div class="booking-section">
+    <h1>Pesan Kamar</h1>
+    <p class="sub">Lengkapi data berikut untuk mengajukan pemesanan kamar.</p>
+    <div class="form-box" id="formBoxBooking"></div>
+</div>
+<footer>&copy; 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="js/app.js"></script>
+<script>
+(function initBooking(){
+    const s = getState();
+    const nav = document.getElementById('navAuthLinks');
+    if (s.session.loggedIn) {
+        const dashUrl = s.session.role === 'pemilik' ? 'pemilik/dashboard.html' : 'penghuni/dashboard.html';
+        nav.innerHTML = `<a href="${dashUrl}">Dashboard</a> <a href="#" onclick="doLogout();return false;">Logout</a>`;
+    } else {
+        nav.innerHTML = `<a href="index.html?login=1" class="btn-login">Login</a>`;
+    }
+
+    const id_kamar = qs('id_kamar');
+    if (!id_kamar) { location.href = 'kamar.html'; return; }
+    const k = s.kamar;
+    if (String(k.id_kamar) !== String(id_kamar)) { location.href = 'kamar.html'; return; }
+
+    renderBookingForm(null, s.pending_booking);
+})();
+
+function renderBookingForm(error, prefill){
+    prefill = prefill || {};
+    document.getElementById('formBoxBooking').innerHTML = `
+        ${error ? `<div class="error-msg">${error}</div>` : ''}
+        <form id="formBooking">
+            <div class="form-group">
+                <label>Nama Lengkap</label>
+                <input type="text" id="bkNama" value="${prefill.nama || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>No. HP / WhatsApp</label>
+                <input type="text" id="bkHp" value="${prefill.nomor_hp || ''}" placeholder="08xxxxxxxxxx" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Mulai Sewa</label>
+                <input type="date" id="bkTglMasuk" value="${prefill.tanggal_mulai_sewa || ''}" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Keluar (Rencana)</label>
+                <input type="date" id="bkTglKeluar" value="${prefill.tanggal_keluar || ''}" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">Ajukan Pemesanan</button>
+        </form>`;
+
+    document.getElementById('formBooking').addEventListener('submit', function(e){
+        e.preventDefault();
+        const nama = document.getElementById('bkNama').value.trim();
+        const nomor_hp = document.getElementById('bkHp').value.trim();
+        const tanggal_mulai_sewa = document.getElementById('bkTglMasuk').value;
+        const tanggal_keluar = document.getElementById('bkTglKeluar').value;
+
+        const result = actionSubmitBooking(nama, nomor_hp, tanggal_mulai_sewa, tanggal_keluar);
+        if (result.error) return renderBookingForm(result.error, { nama, nomor_hp, tanggal_mulai_sewa, tanggal_keluar });
+        if (result.needLogin) {
+            const redirect_url = 'booking.html?id_kamar=' + encodeURIComponent(getState().kamar.id_kamar);
+            location.href = 'index.html?login=1&redirect_url=' + encodeURIComponent(redirect_url);
+            return;
+        }
+        renderBookingSuccess();
+    });
+}
+
+function renderBookingSuccess(){
+    document.getElementById('formBoxBooking').innerHTML = `
+        <div class="success-box">
+            <div class="icon-success">📨</div>
+            <h2>Pemesanan Terkirim!</h2>
+            <p>Permintaan pemesanan kamu sedang ditinjau pemilik kost. Kamu akan diminta mengunggah identitas setelah disetujui sementara.</p>
+            <a href="index.html" class="btn btn-primary">Kembali Ke Beranda</a>
+        </div>`;
+}
+</script>
+</body>
+</html>

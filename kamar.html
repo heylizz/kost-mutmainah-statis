@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informasi Kamar - Kost Mutmainah</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ===== LIGHTBOX (klik gambar buat lihat full-size) ===== */
+        .lightbox-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .lightbox-content img {
+            max-width: 90vw;
+            max-height: 78vh;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .lightbox-caption {
+            color: #fff;
+            font-size: 14px;
+            margin-top: 12px;
+            text-align: center;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: -44px;
+            right: -8px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            font-size: 22px;
+            line-height: 1;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: #fff;
+            font-size: 22px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .lightbox-nav:hover { background: rgba(255,255,255,0.3); }
+        .lightbox-nav.prev { left: -60px; }
+        .lightbox-nav.next { right: -60px; }
+        @media (max-width: 700px) {
+            .lightbox-nav.prev { left: 4px; }
+            .lightbox-nav.next { right: 4px; }
+            .lightbox-close { top: 4px; right: 4px; }
+        }
+        /* penanda visual supaya foto slider kelihatan bisa diklik */
+        .kamar-slider .slide img { cursor: zoom-in; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo">Kost Mutmainah</div>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="kamar.html" class="active">Kamar</a>
+        <a href="kontak.html">Kontak</a>
+        <span id="navAuthLinks"></span>
+    </nav>
+</div>
+
+<div class="kamar-section">
+    <h1>Informasi Kamar</h1>
+    <p class="sub">Kamar nyaman dengan fasilitas lengkap dan lingkungan bersih untuk mendukung kebutuhan penghuni.</p>
+    <div class="kamar-card" id="kamarCard"></div>
+</div>
+
+<!-- Popup kamar penuh -->
+<div class="popup-penuh" id="popupPenuh">
+    <div class="popup-penuh-box">
+        <h3>Mohon Maaf</h3>
+        <p>Semua kamar sedang penuh. Silakan hubungi owner untuk info ketersediaan selanjutnya.</p>
+        <button onclick="document.getElementById('popupPenuh').classList.remove('active')">Tutup</button>
+    </div>
+</div>
+
+<!-- Lightbox untuk lihat foto full-size -->
+<div class="lightbox-overlay" id="lightboxOverlay">
+    <div class="lightbox-content">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <button class="lightbox-nav prev" onclick="geserLightbox(-1)">&#10094;</button>
+        <img id="lightboxImg" src="" alt="">
+        <button class="lightbox-nav next" onclick="geserLightbox(1)">&#10095;</button>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+</div>
+
+<footer>© 2026 Kost Mutmainah. All Rights Reserved.</footer>
+
+<script src="js/app.js"></script>
+<script>
+// Data foto disimpan di luar IIFE supaya bisa diakses lightbox juga
+let fotoListGlobal = [];
+
+(function initKamar() {
+    const s = getState();
+
+    // === NAVBAR ===
+    const nav = document.getElementById('navAuthLinks');
+    if (s.session.loggedIn) {
+        const dashUrl = s.session.role === 'pemilik' ? 'pemilik/dashboard.html' : 'penghuni/dashboard.html';
+        nav.innerHTML = `<a href="${dashUrl}">Dashboard</a> <a href="#" onclick="doLogout();return false;">Logout</a>`;
+    } else {
+        nav.innerHTML = `<a href="index.html?login=1" class="btn-login">Login</a>`;
+    }
+
+    const k = s.kamar;
+    const info = s.informasi_kost || {};
+
+    // Data dummy untuk tampilan (bisa disesuaikan dari state)
+    const fotoList = [
+        { src: 'kamar.jpeg',       caption: 'Kamar'       },
+        { src: 'dapur.jpeg',       caption: 'Dapur'       },
+        { src: 'kamarmandi.jpeg',  caption: 'Kamar Mandi' },
+        { src: 'ruangtamu.jpeg',   caption: 'Ruang Tamu'  },
+        { src: 'areaparkir.jpeg', caption: 'Area Parkir' },
+    ];
+    fotoListGlobal = fotoList;
+
+    const iconMap = {
+        'kasur':        'icon/kasur.png',
+        'bantal':       'icon/bantal.png',
+        'lemari':       'icon/lemari.png',
+        'kamar mandi':  'icon/kamar mandi.png',
+        'kipas':        'icon/kipas.png',
+        'wifi':         'icon/wifi.png',
+        'parkir':       'icon/parkir.png',
+        'dapur':        'icon/dapur.png',
+        'ruang tamu':   'icon/ruang tamu.png',
+        'cctv':         'icon/cctv.png',
+        'ukuran':       'icon/ukuran.png',
+    };
+
+    function getIcon(nama) {
+        const lower = nama.toLowerCase();
+        for (const [key, val] of Object.entries(iconMap)) {
+            if (lower.includes(key)) return val;
+        }
+        return 'icon/fasilitas.png';
+    }
+
+    // Fasilitas kamar & umum dari state (array atau string CSV)
+    const fasilitasKamar = k.fasilitas
+        ? (Array.isArray(k.fasilitas) ? k.fasilitas : k.fasilitas.split(',').map(f => f.trim()).filter(Boolean))
+        : ['Kasur', 'Lemari', 'Wifi', 'Kamar Mandi Dalam', 'Area Parkir'];
+
+    const fasilitasUmum = info.fasilitas_umum
+        ? (Array.isArray(info.fasilitas_umum) ? info.fasilitas_umum : info.fasilitas_umum.split(',').map(f => f.trim()).filter(Boolean))
+        : [];
+
+    // Lokasi terdekat: format "Nama|Jarak;Nama|Jarak"
+    let lokasiList = [];
+    if (info.lokasi_terdekat) {
+        lokasiList = info.lokasi_terdekat.split(';').map(item => {
+            const parts = item.split('|');
+            return parts.length === 2 ? { nama: parts[0].trim(), jarak: parts[1].trim() } : null;
+        }).filter(Boolean);
+    }
+
+    // Aturan kost: format "aturan1|aturan2"
+    const aturanList = info.peraturan
+        ? info.peraturan.split('|').map(a => a.trim()).filter(Boolean)
+        : [];
+
+    const kosong = typeof k.jumlah_tersedia === 'number' ? k.jumlah_tersedia : (k.status === 'Kosong' ? 1 : 0);
+
+    // === BUILD SLIDER HTML (gambar bisa diklik buat lightbox) ===
+    const sliderSlides = fotoList.map((f, i) => `
+        <div class="slide ${i === 0 ? 'active' : ''}">
+            <img src="${f.src}" alt="${f.caption}" onclick="openLightbox(${i})">
+            <span class="slide-caption">${f.caption}</span>
+        </div>
+    `).join('');
+
+    // === BUILD FASILITAS KAMAR ===
+    const fasKamarHtml = fasilitasKamar.map(f => `
+        <div class="fas-item">
+            <img src="${getIcon(f)}" alt="${f}">
+            <span>${f}</span>
+        </div>
+    `).join('');
+
+    // === BUILD FASILITAS UMUM ===
+    const fasUmumHtml = fasilitasUmum.length ? `
+        <div class="section-title">Fasilitas Umum</div>
+        <div class="fasilitas-grid">
+            ${fasilitasUmum.map(f => `
+                <div class="fas-item">
+                    <img src="${getIcon(f)}" alt="${f}">
+                    <span>${f}</span>
+                </div>
+            `).join('')}
+        </div>
+    ` : '';
+
+    // === BUILD SPESIFIKASI ===
+    const spekHtml = `
+        <div class="spesifikasi-grid">
+            ${k.ukuran_kamar ? `<div class="spek-item"><img src="icon/ukuran.png" alt="Ukuran"><span>Ukuran: ${k.ukuran_kamar}</span></div>` : ''}
+            ${k.info_listrik  ? `<div class="spek-item"><img src="icon/termasuk listrik.png" alt="Listrik"><span>Listrik: ${k.info_listrik}</span></div>` : ''}
+        </div>
+    `;
+
+    // === BUILD LOKASI ===
+    const lokasiHtml = lokasiList.length ? `
+        <div class="section-title">Lokasi Terdekat</div>
+        <ul class="lokasi-list">
+            ${lokasiList.map(l => `<li><span>${l.nama}</span><span>${l.jarak}</span></li>`).join('')}
+        </ul>
+    ` : '';
+
+    // === BUILD ATURAN ===
+    const aturanHtml = aturanList.length ? `
+        <div class="section-title">Aturan Kost</div>
+        <ul class="aturan-list">
+            ${aturanList.map(a => `<li>${a}</li>`).join('')}
+        </ul>
+    ` : '';
+
+    // === BUILD TOMBOL PESAN ===
+    const btnHtml = kosong > 0
+        ? `<a href="booking.html?id_kamar=${k.id_kamar}" class="btn btn-kamar">Pesan Sekarang</a>`
+        : `<a href="#" class="btn btn-kamar btn-disabled" onclick="document.getElementById('popupPenuh').classList.add('active');return false;">Pesan Sekarang</a>`;
+
+    // === RENDER KAMAR CARD ===
+    document.getElementById('kamarCard').innerHTML = `
+        <!-- SLIDER FOTO -->
+        <div class="kamar-slider" id="kamarSlider">
+            ${sliderSlides}
+            <button class="slider-arrow prev" onclick="geserSlide(-1)">&#10094;</button>
+            <button class="slider-arrow next" onclick="geserSlide(1)">&#10095;</button>
+        </div>
+
+        <div class="kamar-info">
+            <!-- BADGE KETERSEDIAAN -->
+            <span class="ketersediaan-badge ${kosong > 0 ? 'ada' : 'penuh'}">
+                ${kosong > 0 ? kosong + ' Kamar Tersedia' : 'Semua Kamar Penuh'}
+            </span>
+
+            <!-- HEADER: nama, harga, tombol -->
+            <div class="kamar-header">
+                <div>
+                    <h2>Kamar Kost Mutmainah</h2>
+                    <div class="harga">${formatRupiah(k.harga_sewa)} / bulan</div>
+                </div>
+                ${btnHtml}
+            </div>
+
+            <!-- SPESIFIKASI -->
+            <div class="section-title">Spesifikasi Kamar</div>
+            ${spekHtml}
+
+            <!-- FASILITAS KAMAR -->
+            <div class="section-title">Fasilitas Kamar</div>
+            <div class="fasilitas-grid">${fasKamarHtml}</div>
+
+            <!-- FASILITAS UMUM -->
+            ${fasUmumHtml}
+
+            <!-- LOKASI TERDEKAT -->
+            ${lokasiHtml}
+
+            <!-- ATURAN KOST -->
+            ${aturanHtml}
+        </div>
+    `;
+})();
+
+// === SLIDER LOGIC ===
+let slideIndex = 0;
+function geserSlide(arah) {
+    const slides = document.querySelectorAll('#kamarSlider .slide');
+    if (!slides.length) return;
+    slides[slideIndex].classList.remove('active');
+    slideIndex = (slideIndex + arah + slides.length) % slides.length;
+    slides[slideIndex].classList.add('active');
+}
+
+// === LIGHTBOX LOGIC ===
+let lightboxIndex = 0;
+
+function openLightbox(index) {
+    lightboxIndex = index;
+    renderLightbox();
+    document.getElementById('lightboxOverlay').classList.add('active');
+}
+
+function closeLightbox() {
+    document.getElementById('lightboxOverlay').classList.remove('active');
+}
+
+function geserLightbox(arah) {
+    const total = fotoListGlobal.length;
+    lightboxIndex = (lightboxIndex + arah + total) % total;
+    renderLightbox();
+}
+
+function renderLightbox() {
+    const foto = fotoListGlobal[lightboxIndex];
+    if (!foto) return;
+    document.getElementById('lightboxImg').src = foto.src;
+    document.getElementById('lightboxImg').alt = foto.caption;
+    document.getElementById('lightboxCaption').textContent = foto.caption;
+}
+
+// Klik area gelap di luar gambar buat nutup
+document.getElementById('lightboxOverlay').addEventListener('click', function (e) {
+    if (e.target === this) closeLightbox();
+});
+
+// Tombol Escape buat nutup, panah kiri/kanan buat geser
+document.addEventListener('keydown', function (e) {
+    const overlay = document.getElementById('lightboxOverlay');
+    if (!overlay.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') geserLightbox(-1);
+    if (e.key === 'ArrowRight') geserLightbox(1);
+});
+</script>
+</body>
+</html>
