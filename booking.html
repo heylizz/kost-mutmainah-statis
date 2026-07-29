@@ -50,19 +50,23 @@ function renderBookingForm(error, prefill){
         <form id="formBooking">
             <div class="form-group">
                 <label>Nama Lengkap</label>
-                <input type="text" id="bkNama" value="${prefill.nama || ''}" required>
+                <input type="text" id="bkNama" value="${prefill.nama || ''}" required
+                    oninvalid="this.setCustomValidity('Nama lengkap wajib diisi.')" oninput="this.setCustomValidity('')">
             </div>
             <div class="form-group">
                 <label>No. HP / WhatsApp</label>
-                <input type="text" id="bkHp" value="${prefill.nomor_hp || ''}" placeholder="08xxxxxxxxxx" required>
+                <input type="text" id="bkHp" value="${prefill.nomor_hp || ''}" placeholder="08xxxxxxxxxx" required
+                    oninvalid="this.setCustomValidity('Nomor HP/WhatsApp wajib diisi.')" oninput="this.setCustomValidity('')">
             </div>
             <div class="form-group">
                 <label>Tanggal Mulai Sewa</label>
-                <input type="date" id="bkTglMasuk" value="${prefill.tanggal_mulai_sewa || ''}" required>
+                <input type="date" id="bkTglMasuk" value="${prefill.tanggal_mulai_sewa || ''}" required
+                    oninvalid="this.setCustomValidity('Tanggal mulai sewa wajib diisi.')" oninput="this.setCustomValidity('')">
             </div>
             <div class="form-group">
                 <label>Tanggal Keluar (Rencana)</label>
-                <input type="date" id="bkTglKeluar" value="${prefill.tanggal_keluar || ''}" required>
+                <input type="date" id="bkTglKeluar" value="${prefill.tanggal_keluar || ''}" required
+                    oninvalid="this.setCustomValidity('Tanggal keluar wajib diisi.')" oninput="this.setCustomValidity('')">
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">Ajukan Pemesanan</button>
         </form>`;

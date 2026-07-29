@@ -20,7 +20,6 @@
 <div class="dashboard-section">
     <h1>Dashboard Penghuni</h1>
     <p class="sub">Informasi status sewa dan pembayaran penghuni kost.</p>
-    <div id="waBannerBox"></div>
     <div id="dashboardBody"></div>
 </div>
 
@@ -57,14 +56,13 @@ if (!penghuni && !booking) {
                 <div class="form-group">
                     <label>File Identitas (KTP)</label>
                     <input type="file" id="fileIdentitasDash" accept=".jpg,.jpeg,.png,.pdf" required>
-                    <small>Format: JPG, PNG, atau PDF. Maksimal 2MB. (Simulasi: hanya nama file yang dicatat)</small>
+                    <small>Format: JPG, PNG, atau PDF. Maksimal 2MB.</small>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">Upload Identitas</button>
             </form>`;
 
     } else if (booking.status_booking === 'Menunggu Konfirmasi') {
-        inner = `<p>Identitas kamu sudah diterima (file: <b>${booking.identitas}</b>). Pemilik kost sedang melakukan konfirmasi akhir.</p>
-                 <p style="margin-top:10px;font-size:12px;color:#999;">Simulasi: login sebagai pemilik untuk memproses konfirmasi akhir.</p>`;
+        inner = `<p>Identitas kamu sudah diterima (file: <b>${booking.identitas}</b>). Pemilik kost sedang melakukan konfirmasi akhir.</p>`;
 
     } else if (booking.status_booking === 'Ditolak') {
         inner = `<p>Mohon maaf, pemesanan kamu ditolak oleh pemilik kost.</p>
@@ -112,13 +110,13 @@ if (!penghuni && !booking) {
             </div>
             <div class="stat-card">
                                 <div class="stat-icon"><img src="../icon/reminder.png" alt="upload"></div>
-                <div class="stat-label">Reminder Pembayaran</div>
+                <div class="stat-label">Pengingat Pembayaran</div>
                 <div class="stat-value">${Math.abs(diffHari)} Hari ${diffHari < 0 ? 'Lalu' : 'Lagi'}</div>
                 <span class="badge-yellow" style="display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-top:8px;">Jatuh Tempo</span>
             </div>
         </div>
         <div class="table-box">
-            <h3>Histori Pembayaran</h3>
+            <h3>Riwayat Pembayaran</h3>
             <table>
                 <thead><tr><th>Bulan</th><th>Tanggal</th><th>Status</th></tr></thead>
                 <tbody>

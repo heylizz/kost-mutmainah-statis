@@ -22,7 +22,6 @@
 <div class="dashboard-section">
     <h1>Kelola Pemesanan</h1>
     <p class="sub">Periksa dan setujui atau tolak pengajuan pemesanan kamar.</p>
-    <div id="waBannerBox"></div>
 
     <div class="table-box">
         <h3>Tahap 1 — Pengajuan Baru (Persetujuan Sementara)</h3>
@@ -49,11 +48,6 @@ requirePemilik();
 
 renderTables();
 
-function clearWaBanner(){
-    const s = getState(); s.lastWaMessage = null; saveState(s);
-    document.getElementById('waBannerBox').innerHTML = '';
-}
-
 function renderTables(){
     const s = getState();
     const listAwal = s.bookings.filter(b => b.status_booking === 'Menunggu Persetujuan').sort((a,b)=>b.id_booking-a.id_booking);
@@ -75,7 +69,7 @@ function renderTables(){
         <tr>
             <td>${b.nama}</td>
             <td>${b.nomor_hp}</td>
-            <td><button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="alert('Simulasi: menampilkan file ${b.identitas}')">Lihat File</button></td>
+            <td><button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="showFotoDokumen('${b.identitas}', 'Identitas (KTP)')">Lihat File</button></td>
             <td>${b.nomor_kamar ?? '-'}</td>
             <td class="actions-cell">
                 <button class="btn btn-success btn-sm" onclick="handleSetujuFinal(${b.id_booking})">Setuju Final &amp; WA</button>
@@ -86,16 +80,16 @@ function renderTables(){
 
 function handleSetujuSementara(id_booking){
     const nk = document.getElementById('nk_' + id_booking).value;
-    actionSetujuSementara(id_booking, nk);
-    location.reload();
+    const result = actionSetujuSementara(id_booking, nk);
+    if (result.waUrl) location.href = result.waUrl;
 }
 function handleTolak(id_booking){
-    actionTolakBooking(id_booking);
-    location.reload();
+    const result = actionTolakBooking(id_booking);
+    if (result.waUrl) location.href = result.waUrl;
 }
 function handleSetujuFinal(id_booking){
-    actionSetujuFinal(id_booking);
-    location.reload();
+    const result = actionSetujuFinal(id_booking);
+    if (result.waUrl) location.href = result.waUrl;
 }
 </script>
 </body>

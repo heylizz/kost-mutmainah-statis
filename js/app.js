@@ -1,5 +1,5 @@
 /* =========================================================================
-   app.js — OTAK SIMULASI SISTEM (pengganti includes/auth.php + includes/db.php)
+   app.js — OTAK SISTEM (pengganti includes/auth.php + includes/db.php)
 
    Ini BUKAN backend beneran. Semua "tabel" (user, booking, penghuni,
    pembayaran, kamar) disimpan sebagai satu objek JSON di localStorage
@@ -19,7 +19,7 @@ function defaultState() {
     // supaya bisa langsung login sebagai pemilik tanpa perlu daftar
     // (pengganti generate_password.php di versi PHP).
     users: [
-      { id_user: 1, username: 'admin', password: 'admin123', role: 'pemilik' },
+      { id_user: 1, username: 'admin', password: '123456', role: 'pemilik' },
       { id_user: 2, username: 'firliani', password: '123456', role: 'penghuni' },
       { id_user: 3, username: 'salsabila', password: '123456', role: 'penghuni' },
       { id_user: 4, username: 'yorri', password: '123456', role: 'penghuni' },
@@ -28,9 +28,11 @@ function defaultState() {
       { id_user: 7, username: 'anggi', password: '123456', role: 'penghuni' },
       { id_user: 8, username: 'bila', password: '123456', role: 'penghuni' },
       { id_user: 9, username: 'gabriel', password: '123456', role: 'penghuni' },
-      { id_user: 10, username: 'sanora', password: '123456', role: 'penghuni' }
+      { id_user: 10, username: 'sanora', password: '123456', role: 'penghuni' },
+      { id_user: 11, username: 'holis', password: '123456', role: 'penghuni' },
+      { id_user: 12, username: 'bagas', password: '123456', role: 'penghuni' }
     ],
-    nextUserId: 11,
+    nextUserId: 13,
 
     session: { loggedIn: false, id_user: null, username: null, role: null },
 
@@ -60,9 +62,13 @@ function defaultState() {
       peraturan: 'Jam malam: pukul 22:00 untuk penghuni putra, pukul 23:00 untuk penghuni putri|Dilarang membawa tamu lawan jenis masuk ke dalam kamar|Wajib lapor ke pemilik/pengurus kost apabila pulang melewati jam malam|Dilarang membawa tamu menginap|Wajib menjaga kebersihan dan ketertiban lingkungan kost|Pembayaran sewa paling lambat tanggal 10 setiap bulan'
     },
 
-    // tabel booking
-    bookings: [],
-    nextBookingId: 1,
+    // tabel booking — diisi contoh sesuai kondisi yang pernah ditunjukkan
+    // (Holis: Tahap 1 belum di-assign kamar, Bagas: Tahap 2 sudah upload identitas, kamar 11)
+    bookings: [
+      { id_booking: 1, id_user: 11, id_kamar: 1, nama: 'Holis', nomor_hp: '0878-9988-9272', tanggal: todayStr(), tanggal_mulai_sewa: todayStr(), tanggal_keluar: null, status_booking: 'Menunggu Persetujuan', identitas: null, nomor_kamar: null },
+      { id_booking: 2, id_user: 12, id_kamar: 1, nama: 'Bagas', nomor_hp: '0812-3456-9012', tanggal: todayStr(), tanggal_mulai_sewa: todayStr(), tanggal_keluar: null, status_booking: 'Menunggu Konfirmasi', identitas: 'ktp_bagas.jpg', nomor_kamar: 11 }
+    ],
+    nextBookingId: 3,
 
     // dipakai untuk niruin $_SESSION['pending_booking'] di versi PHP
     pending_booking: null,
@@ -81,13 +87,20 @@ function defaultState() {
     ],
     nextPenghuniId: 10,
 
-    // tabel pembayaran
-    pembayaran: [],
-    nextBayarId: 1,
-
-    // dipakai untuk niruin redirect ke wa.me (flash message sekali tampil)
-    lastWaMessage: null
+ 
+    pembayaran: buildRiwayatPembayaranAwal(),
+    nextBayarId: 23
   };
+}
+
+
+function formatNomorWA(nomor) {
+  let wa = (nomor || '').replace(/[^0-9]/g, '');
+  if (wa.charAt(0) === '0') wa = '62' + wa.substring(1);
+  return wa;
+}
+function buildWaUrl(nomor, pesan) {
+  return `https://wa.me/${formatNomorWA(nomor)}?text=${encodeURIComponent(pesan)}`;
 }
 
 function getState() {
@@ -102,14 +115,12 @@ function getState() {
 function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
 function resetSimulationData() {
-  if (!confirm('Reset semua data simulasi (user, booking, penghuni, pembayaran) ke kondisi awal?')) return;
+  if (!confirm('Reset semua data (user, booking, penghuni, pembayaran) ke kondisi awal?')) return;
   localStorage.removeItem(STORAGE_KEY);
   location.href = rootPath() + 'index.html';
 }
 
-/* ---------- PATH HELPER ----------
-   Karena file ada di root maupun di /penghuni/ dan /pemilik/,
-   perlu tahu berapa "../" yang dibutuhkan untuk balik ke root. */
+
 function rootPath() {
   return location.pathname.includes('/penghuni/') || location.pathname.includes('/pemilik/') ? '../' : '';
 }
@@ -140,6 +151,30 @@ function doLogout() {
   location.href = rootPath() + 'index.html';
 }
 
+/* ---------- LIHAT DOKUMEN (identitas/bukti transfer) ---------- */
+function showFotoDokumen(namaFile, judul) {
+  let overlay = document.getElementById('fotoDokumenOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'fotoDokumenOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:3000;align-items:center;justify-content:center;padding:24px;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:12px;padding:20px;max-width:340px;text-align:center;position:relative;">
+        <button onclick="document.getElementById('fotoDokumenOverlay').style.display='none'" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;">&times;</button>
+        <h3 id="fotoDokumenJudul" style="font-size:15px;margin-bottom:12px;margin-top:6px;">Dokumen</h3>
+        <div style="width:100%;height:200px;background:#e5e7eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px;">
+            <img src="${rootPath()}icon/dokumen.png" alt="Pratinjau dokumen" style="width:56px;height:56px;opacity:0.6;">
+        </div>
+        <div id="fotoDokumenCaption" style="font-size:12px;color:#777;margin-top:10px;word-break:break-all;"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.style.display = 'none'; });
+  }
+  document.getElementById('fotoDokumenJudul').textContent = judul || 'Dokumen';
+  document.getElementById('fotoDokumenCaption').textContent = namaFile;
+  overlay.style.display = 'flex';
+}
+
 /* ---------- QUERY STRING HELPER ---------- */
 function qs(name) {
   return new URLSearchParams(location.search).get(name);
@@ -149,6 +184,19 @@ function qs(name) {
 function formatRupiah(n) { return 'Rp' + Number(n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function thisMonthStr() { return new Date().toISOString().slice(0, 7); }
+function monthsAgoStr(n) {
+  const d = new Date();
+  d.setDate(1); // hindari overflow tanggal pas mundur bulan (misal tanggal 31)
+  d.setMonth(d.getMonth() - n);
+  return d.toISOString().slice(0, 7);
+}
+function monthsAgoDateStr(n, tanggal) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - n);
+  d.setDate(tanggal || 8);
+  return d.toISOString().slice(0, 10);
+}
 function formatTanggalIndo(dateStr) {
   if (!dateStr) return '-';
   const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -156,11 +204,28 @@ function formatTanggalIndo(dateStr) {
   return d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
 }
 
-/* =========================================================================
-   BUSINESS LOGIC — meniru query yang ada di masing-masing file .php asli
-   ========================================================================= */
 
-// register.php: INSERT INTO user (username, password, role) VALUES (?, ?, 'penghuni')
+function buildRiwayatPembayaranAwal() {
+  const HARGA = 800000;
+  const list = [];
+  let id = 1;
+
+  for (let idPenghuni = 1; idPenghuni <= 9; idPenghuni++) {
+    // 2 bulan lalu & 1 bulan lalu: semua Lunas (riwayat)
+    list.push({ id_pembayaran: id++, id_penghuni: idPenghuni, jumlah_bayar: HARGA, tanggal_bayar: monthsAgoDateStr(2), periode_bulan: monthsAgoStr(2), status_pembayaran: 'Lunas', bukti_transfer: 'bukti_' + idPenghuni + '_lalu2.jpg' });
+    list.push({ id_pembayaran: id++, id_penghuni: idPenghuni, jumlah_bayar: HARGA, tanggal_bayar: monthsAgoDateStr(1), periode_bulan: monthsAgoStr(1), status_pembayaran: 'Lunas', bukti_transfer: 'bukti_' + idPenghuni + '_lalu1.jpg' });
+  }
+
+  // Bulan berjalan: status bervariasi sesuai skenario contoh
+  const statusBulanIni = { 1: 'Lunas', 2: 'Pending', 3: 'Ditolak', 4: 'Pending' };
+  for (const [idPenghuni, status] of Object.entries(statusBulanIni)) {
+    list.push({ id_pembayaran: id++, id_penghuni: Number(idPenghuni), jumlah_bayar: HARGA, tanggal_bayar: todayStr(), periode_bulan: thisMonthStr(), status_pembayaran: status, bukti_transfer: 'bukti_' + idPenghuni + '_bulanini.jpg' });
+  }
+
+  return list;
+}
+
+
 function actionRegister(username, password) {
   const s = getState();
   if (s.users.find(u => u.username === username)) {
@@ -182,14 +247,15 @@ function actionLogin(username, password) {
 }
 
 // booking.php POST: INSERT INTO booking (...)
-function actionSubmitBooking(nama, nomor_hp, tanggal_mulai_sewa) {
+function actionSubmitBooking(nama, nomor_hp, tanggal_mulai_sewa, tanggal_keluar) {
   const s = getState();
-  if (!nama || !nomor_hp || !tanggal_mulai_sewa) return { error: 'Semua kolom wajib diisi.' };
+  if (!nama || !nomor_hp || !tanggal_mulai_sewa || !tanggal_keluar) return { error: 'Semua kolom wajib diisi.' };
   if (tanggal_mulai_sewa < todayStr()) return { error: 'Tanggal mulai sewa tidak boleh sebelum hari ini.' };
+  if (tanggal_keluar <= tanggal_mulai_sewa) return { error: 'Tanggal keluar harus setelah tanggal mulai sewa.' };
 
   if (!s.session.loggedIn) {
-    // niruin $_SESSION['pending_booking'] lalu redirect ke login
-    s.pending_booking = { id_kamar: s.kamar.id_kamar, nama, nomor_hp, tanggal_mulai_sewa };
+   
+    s.pending_booking = { id_kamar: s.kamar.id_kamar, nama, nomor_hp, tanggal_mulai_sewa, tanggal_keluar };
     saveState(s);
     return { needLogin: true };
   }
@@ -201,6 +267,7 @@ function actionSubmitBooking(nama, nomor_hp, tanggal_mulai_sewa) {
     nama, nomor_hp,
     tanggal: todayStr(),
     tanggal_mulai_sewa,
+    tanggal_keluar,
     status_booking: 'Menunggu Persetujuan',
     identitas: null,
     nomor_kamar: null
@@ -226,23 +293,24 @@ function getMyPenghuni() {
 function actionSetujuSementara(id_booking, nomor_kamar_input) {
   const s = getState();
   const bk = s.bookings.find(b => b.id_booking === id_booking);
-  if (!bk) return;
+  if (!bk) return {};
   const nk = parseInt(nomor_kamar_input);
-  if (nk && nk === s.kamar.nomor_kamar) bk.nomor_kamar = nk;
-  else if (nk) bk.nomor_kamar = nk; // simulasi bebas nomor kamar (1 kamar tersedia di demo ini)
+  if (nk) bk.nomor_kamar = nk; // catatan: nomor kamar bebas diisi manual (1 kamar tersedia di demo ini)
   bk.status_booking = 'Menunggu Identitas';
-  s.lastWaMessage = `Halo ${bk.nama}, pemesanan kamar Anda disetujui SEMENTARA. Silakan upload identitas (KTP) di akun Anda untuk melanjutkan proses. Terima kasih - Kost Mutmainah`;
   saveState(s);
+  const pesan = `Halo ${bk.nama}, pemesanan kamar Anda disetujui SEMENTARA. Silakan upload identitas (KTP) di akun Anda untuk melanjutkan proses. Terima kasih - Kost Mutmainah`;
+  return { waUrl: buildWaUrl(bk.nomor_hp, pesan) };
 }
 
 // pemilik/booking.php aksi=tolak
 function actionTolakBooking(id_booking) {
   const s = getState();
   const bk = s.bookings.find(b => b.id_booking === id_booking);
-  if (!bk) return;
+  if (!bk) return {};
   bk.status_booking = 'Ditolak';
-  s.lastWaMessage = `Halo ${bk.nama}, maaf pemesanan kamar Anda DITOLAK. Silakan hubungi kami untuk info lebih lanjut. Terima kasih - Kost Mutmainah`;
   saveState(s);
+  const pesan = `Halo ${bk.nama}, maaf pemesanan kamar Anda DITOLAK. Silakan hubungi kami untuk info lebih lanjut. Terima kasih - Kost Mutmainah`;
+  return { waUrl: buildWaUrl(bk.nomor_hp, pesan) };
 }
 
 // upload_identitas.php / penghuni/dashboard.php: UPDATE booking SET identitas=..., status_booking='Menunggu Konfirmasi'
@@ -260,7 +328,7 @@ function actionUploadIdentitas(id_booking, filename) {
 function actionSetujuFinal(id_booking) {
   const s = getState();
   const bk = s.bookings.find(b => b.id_booking === id_booking);
-  if (!bk) return;
+  if (!bk) return {};
   bk.status_booking = 'Disetujui';
 
   const sudahAda = s.penghuni.find(p => p.nomor_hp === bk.nomor_hp);
@@ -278,8 +346,9 @@ function actionSetujuFinal(id_booking) {
     });
   }
   s.kamar.status = 'Terisi';
-  s.lastWaMessage = `Halo ${bk.nama}, booking kamar ${bk.nomor_kamar || s.kamar.nomor_kamar} Anda telah DISETUJUI FINAL. Selamat bergabung di Kost Mutmainah!`;
   saveState(s);
+  const pesan = `Halo ${bk.nama}, booking kamar ${bk.nomor_kamar || s.kamar.nomor_kamar} Anda telah DISETUJUI FINAL. Selamat bergabung di Kost Mutmainah!`;
+  return { waUrl: buildWaUrl(bk.nomor_hp, pesan) };
 }
 
 // penghuni/pembayaran.php POST: INSERT INTO pembayaran (...)
@@ -308,9 +377,8 @@ function actionValidasiPembayaran(id_pembayaran, aksi) {
   saveState(s);
 }
 
-// pemilik/penghuni.php: reminder WA
-function actionKirimReminder(nama) {
-  const s = getState();
-  s.lastWaMessage = `Halo ${nama}, ini adalah reminder pembayaran sewa kost bulan ${new Date().toLocaleString('id-ID',{month:'long', year:'numeric'})}. Mohon segera melakukan pembayaran. Terima kasih.`;
-  saveState(s);
+// pemilik/penghuni.php: pengingat pembayaran
+function actionKirimReminder(nama, nomorHp) {
+  const pesan = `Halo ${nama}, ini adalah pengingat pembayaran sewa kost bulan ${new Date().toLocaleString('id-ID',{month:'long', year:'numeric'})}. Mohon segera melakukan pembayaran. Terima kasih.`;
+  return { waUrl: buildWaUrl(nomorHp, pesan) };
 }

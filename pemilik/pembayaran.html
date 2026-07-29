@@ -50,7 +50,7 @@ function renderPending(){
         <tr>
             <td>${pgh ? pgh.nama : '-'}</td>
             <td>${pgh ? pgh.nomor_kamar : '-'}</td>
-            <td><button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="alert('Simulasi: menampilkan file ${p.bukti_transfer}')">Bukti</button></td>
+            <td><button class="bukti-btn" style="background:#eee;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="showFotoDokumen('${p.bukti_transfer}', 'Bukti Transfer')">Bukti</button></td>
             <td><span class="badge-yellow" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${p.status_pembayaran}</span></td>
             <td class="actions-cell">
                 <button class="btn btn-success btn-sm" onclick="handleValidasi(${p.id_pembayaran}, 'approve')">Approve</button>

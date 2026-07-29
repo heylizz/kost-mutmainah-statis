@@ -47,7 +47,7 @@ requirePemilik();
 
 function statusBayarTerakhir(id_penghuni){
     const s = getState();
-    const list = s.pembayaran.filter(p => p.id_penghuni === id_penghuni && p.periode_bulan === thisMonthStr()).sort((a,b)=>b.id_pembayaran-a.id_pembayaran);
+    const list = s.pembayaran.filter(p => p.id_penghuni === id_penghuni).sort((a,b)=>b.id_pembayaran-a.id_pembayaran);
     return list.length ? list[0].status_pembayaran : null;
 }
 
@@ -66,7 +66,7 @@ function renderList(search){
             <td>${p.nomor_kamar}</td>
             <td><span class="${statusBayar === 'Lunas' ? 'badge-green' : 'badge-yellow'}" style="padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;">${statusBayar || 'Belum Bayar'}</span></td>
             <td>
-                <button class="btn btn-success btn-sm" onclick="handleReminder('${p.nama.replace(/'/g,"")}', '${p.nomor_hp}')">Kirim Pengingat WA</button>
+                ${statusBayar !== 'Lunas' ? `<button class="btn btn-success btn-sm" onclick="handleReminder('${p.nama.replace(/'/g,"")}', '${p.nomor_hp}')">Kirim Pengingat WA</button>` : ''}
             </td>
         </tr>`;
     }).join('') : `<tr><td colspan="6" style="text-align:center;color:#aaa;">Tidak ada data penghuni</td></tr>`;

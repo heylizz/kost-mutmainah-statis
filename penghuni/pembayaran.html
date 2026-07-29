@@ -32,7 +32,7 @@
 <div class="page">
   <div class="container">
     <h1 style="font-size:22px;font-weight:600;text-align:center;margin-bottom:6px;">Pembayaran Kost</h1>
-    <p class="sub" style="text-align:center;color:#6b7280;margin-bottom:28px;">Upload bukti pembayaran untuk melakukan konfirmasi pembayaran kost.</p>
+    <p class="sub" style="text-align:center;color:#6b7280;margin-bottom:28px;">Unggah bukti pembayaran untuk melakukan konfirmasi pembayaran kost.</p>
     <div class="card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;" id="cardPembayaran"></div>
   </div>
 </div>
@@ -73,12 +73,12 @@ function renderPembayaranPage(error, success){
         </div>
         ${error ? `<div class="error-msg">${error}</div>` : ''}
         <form id="formBayar">
-            <div class="section-label">Upload Bukti Pembayaran</div>
+            <div class="section-label">Unggah Bukti Pembayaran</div>
             <div class="upload-area" onclick="document.getElementById('fileBukti').click()">
                 <div class="upload-icon">
             <img src="../icon/upload.png" alt="upload">
           </div>
-                <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">Upload bukti transfer pembayaran</div>
+                <div style="font-size:13px;color:#6b7280;margin-bottom:10px;">Unggah bukti transfer pembayaran</div>
                 <button class="btn-outline" type="button" style="border:1px solid #d1d5db;background:transparent;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:500;color:#1CAF82;cursor:pointer;">Pilih File</button>
                 <input type="file" id="fileBukti" style="display:none" accept=".jpg,.jpeg,.png" onchange="showFileName(this)">
                 <div class="filename-tag" id="fname" style="display:none;"></div>
@@ -89,7 +89,7 @@ function renderPembayaranPage(error, success){
     document.getElementById('formBayar').addEventListener('submit', function(e){
         e.preventDefault();
         const f = document.getElementById('fileBukti').files[0];
-        if (!f) return renderPembayaranPage('Silakan upload bukti transfer terlebih dahulu.', false);
+        if (!f) return renderPembayaranPage('Silakan unggah bukti transfer terlebih dahulu.', false);
         const ext = f.name.split('.').pop().toLowerCase();
         if (!['jpg','jpeg','png'].includes(ext)) return renderPembayaranPage('Format file harus JPG atau PNG.', false);
         if (f.size > 2 * 1024 * 1024) return renderPembayaranPage('Ukuran file maksimal 2MB.', false);
