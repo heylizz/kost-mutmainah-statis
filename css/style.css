@@ -400,6 +400,7 @@ table tr:last-child td { border-bottom: none; }
         flex-wrap: wrap;
         align-items: center;
         gap: 10px;
+         justify-content: space-between;
         width: 100%;
     }
     .navbar nav a {
