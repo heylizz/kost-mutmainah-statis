@@ -376,7 +376,6 @@ table tr:last-child td { border-bottom: none; }
 .modal-close:hover { color: #333; }
 .error-msg { background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .hero { flex-direction: column; padding: 30px 20px; }
     .hero-img { width: 100%; }
@@ -387,6 +386,40 @@ table tr:last-child td { border-bottom: none; }
     .dashboard-section { padding: 20px; }
     .kamar-header { flex-direction: column; align-items: stretch; }
     .kamar-header .btn { width: 100%; text-align: center; }
+
+ 
+    .navbar {
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+    .navbar .logo {
+        font-size: 20px;
+    }
+    .navbar nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+    .navbar nav a {
+        margin-left: 0;
+        font-size: 14px;
+    }
+    .dash-nav {
+        flex-wrap: wrap;
+        row-gap: 10px;
+        padding: 14px 20px;
+    }
+    .dash-nav nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: 100%;
+    }
+    .dash-nav nav a {
+        margin-left: 0;
+    }
 }
 .dash-top {
     display: flex;
